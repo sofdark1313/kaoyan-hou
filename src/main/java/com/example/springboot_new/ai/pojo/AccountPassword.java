@@ -9,4 +9,6 @@ public class AccountPassword {
     private String account;
     private String password;
     private String accountIdentity;
+    private String phoneNumber;
+    private String messageContent;
 }

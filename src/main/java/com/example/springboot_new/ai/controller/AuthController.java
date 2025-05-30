@@ -55,4 +55,28 @@ public class AuthController {
             return new ResponseMessage<>(0, e.getMessage(), null);
         }
     }
+    
+    // 新增：找回账号密码接口
+    @PostMapping("/recovery")
+    public ResponseMessage<RecoveryResponse> recoverAccount(@RequestBody RecoveryRequest request) {
+        try {
+            RecoveryResponse response = authService.recoverAccount(request);
+            return new ResponseMessage<>(1, "密码重置成功", response);
+        } catch (Exception e) {
+            return new ResponseMessage<>(0, e.getMessage(), null);
+        }
+    }
+    
+    // 新增：用户身份充值接口
+    @PostMapping("/upgrade")
+    public ResponseMessage<UpgradeResponse> upgradeAccount(
+            @RequestHeader("Authorization") String token,
+            @RequestBody UpgradeRequest request) {
+        try {
+            UpgradeResponse response = authService.upgradeAccount(token, request);
+            return new ResponseMessage<>(1, "升级VIP成功", response);
+        } catch (Exception e) {
+            return new ResponseMessage<>(0, e.getMessage(), null);
+        }
+    }
 }

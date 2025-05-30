@@ -282,9 +282,6 @@ public class DeepSeekService {
     public String chatAndFinal(List<Map<String, String>> messages) {
         ChatReply chatReply = chatAndQuery(messages);
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String chatReplyJson = objectMapper.writeValueAsString(chatReply);
-
             // 获取最后一条用户消息
             String lastUserMessage = "";
             for (int i = messages.size() - 1; i >= 0; i--) {
@@ -294,6 +291,23 @@ public class DeepSeekService {
                     break;
                 }
             }
+
+            // 将ChatReply对象转为JSON字符串
+            ObjectMapper objectMapper = new ObjectMapper();
+            String chatReplyJson = objectMapper.writeValueAsString(chatReply);
+
+            // 拼接请求数据和返回数据
+            StringBuilder messageContent = new StringBuilder();
+            messageContent.append("请求数据: ").append(lastUserMessage).append("\n");
+            messageContent.append("返回数据: ").append(chatReplyJson).append("\n");
+
+            // 这里需要添加AccountPasswordMapper的注入
+            // 假设mapper和account已在类中定义
+            // AccountPassword accountPassword = mapper.findByAccount(account);
+            // if (accountPassword != null) {
+            //     accountPassword.setMessageContent(messageContent.toString());
+            //     mapper.updateMessageContent(accountPassword);
+            // }
 
             String finalPrompt = "以下是用户的请求和数据库查询结果：\n" + chatReplyJson + "\n请根据以上信息生成专业回复。";
 
@@ -342,7 +356,7 @@ public class DeepSeekService {
 
             return "未获取到AI回复内容";
         } catch (Exception e) {
-            log.error("调用DeepSeek API出错", e);
+            log.error("处理消息内容出错", e);
             return "抱歉，处理您的请求时出现错误：" + e.getMessage();
         }
     }
