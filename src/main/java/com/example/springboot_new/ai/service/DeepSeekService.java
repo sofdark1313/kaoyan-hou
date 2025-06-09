@@ -26,7 +26,7 @@ public class DeepSeekService {
     private static final String PROMPT_PREFIX = "1.你是一个将自然语言转化成SQL查询语句的助手，你只能写查询相关语句，不能够写插入，修改，更新语句。请只返回如下JSON对象和后续对用户的文字建议，不要输出任何解释、代码块或多余内容：\\n\\n{\\n  \"sql\": \"SELECT * FROM (SELECT *,ROW_NUMBER() OVER (PARTITION BY 学位授予门类 ORDER BY 序号) AS rn FROM 全国专业信息) t WHERE rn = 1\",\\n  \"params\": []\\n}\\n;" +
             "2.你面向的是有考研意向的本科生，你需要理解他们的话语到底是什么需求，推断他们可能需要的数据是什么，为了确保生成的查询语句正确，你要尽可能确保你所查询的表的属性列全部返回，除非用户明确要求了只能返回哪些属性列" +
             "3.目前，数据库中一共有五个表，分别是'25考408的院校专业','2023年初试分数线','2024年初试分数线','2025年初试分数线','各院校计算机科学与技术专业的初试_复试_加试内容'。你需要根据用户的需求对这些表格进行灵活多样的查询，包括单表查询，多表查询等\n"+
-            "4.查询语句要使用limit限制规模，最多返回100组数据,返回的数据需要按照2025年初试分数线从小到大排序,这是硬性要求，所以你的任何查询都要关联到2025年初试分数线表,除非没法关联;" +
+            "4.查询语句要使用limit限制规模，最多返回300组数据;" +
             "5.你需要非常明确的知道某个表的某个属性的列名的确定名称，必须完全基于我的提示词，不能够进行任何的推断假设" +
             "25考408的院校专业表的各个属性列如下:" +
             "学校 varchar(255)," +
@@ -70,7 +70,7 @@ public class DeepSeekService {
             "复试科目 varchar(255), ##示例：数据结构、专业基础知识、领域知识" +
             "同等学力加试科目 varchar(255) ##是指的没有本科学历但是有同等学力（如专科）的学生需要额外考核的科目；" +
             "高校基本数据表的各个属性列如下:" +
-            "省份 varchar(255), ##示例：江苏、浙江" +
+            "省份 varchar(255), ##示例：江苏、浙江;" +
             "大学名称 varchar(255)," +
             "公办/民办 varchar(255), ##这一列的值为1表示公办，为0表示民办," +
             "985 tinyint(1), ##这一列的值为1表示是985，为0表示不是985," +
@@ -83,11 +83,11 @@ public class DeepSeekService {
             "8.你每生成一次json格式的查询语句，都要在后面紧跟对用户的文字建议，如果用户的查询意义不明，你可以引导用户应该如何请求，如果用户的查询很明确，你就说明一下你返回的内容是什么;" +
             "9.某些表的某些属性列名是数字，为了防止歧义，要写成`985`的样式";
     private static final String PROMPT_PREFIX_Judge = "请根据用户输入的请求判断用户是需要备考建议还是择校建议，还是两者都有，还是两者都没有，根据具体情况返回相应的数字，返回结果只能是单个数字，不能包含其它任何内容:" +
-            "1.如果用户什么都不需要，就返回'0';" +
+            "1.如果用户什么都不需要，或者用户携带的标签说明该用户没有开通vip权益就返回'0';" +
             "2.如果用户需要备考建议不需要择校建议，就返回'1';" +
             "3.如果用户需要择校建议不需要备考建议，就返回'2';" +
             "4.如果用户都需要，就返回'3';";
-    private static final String PROMPT_PREFIX_Final = "根据用户输入信息和数据库查询结果，生成专业的回复，在向用户推荐院校和专业时，需要充分利用知识库中检索到的相关知识，并模仿知识库中的推荐逻辑，并设法进一步了解用户的具体需求，根据用户的具体需求给出更细化后的答案";
+    private static final String PROMPT_PREFIX_Final = "根据用户输入信息和数据库查询结果，生成专业的回复，在向用户推荐院校和专业时，需要充分利用知识库中检索到的相关知识，并模仿知识库中的推荐逻辑，并设法进一步了解用户的具体需求，包括择校需求和备考需求(用户更关注什么你就更侧重什么)，根据用户的具体需求给出更细化后的答案";
 
     @Value("${deepseek.api.key}")
     private String apiKey;
@@ -198,13 +198,15 @@ public class DeepSeekService {
         List<String> queryList1 = new ArrayList<>();
         List<String> queryList2 = new ArrayList<>();
 
-        // 获取最后一条用户消息
-        String lastUserMessage = "";
+        // 获取所有用户消息
+        StringBuilder lastUserMessage = new StringBuilder();
         for (int i = messages.size() - 1; i >= 0; i--) {
             Map<String, String> msg = messages.get(i);
             if ("user".equals(msg.get("role"))) {
-                lastUserMessage = msg.get("content");
-                break;
+                String content = msg.get("content");
+                lastUserMessage.append(content).append("。");
+                //lastUserMessage = msg.get("content");
+                //break;
             }
         }
 
@@ -213,16 +215,16 @@ public class DeepSeekService {
                 System.out.println("没有需要处理的信息");
                 break;
             case "1":
-                queryList1 = queryService.callPythonScript(lastUserMessage,"prepare_experience");
+                queryList1 = queryService.callPythonScript(lastUserMessage.toString(),"prepare_experience");
                 System.out.println(queryList1);
                 break;
             case "2":
-                queryList2 = queryService.callPythonScript(lastUserMessage,"select_experience");
+                queryList2 = queryService.callPythonScript(lastUserMessage.toString(),"select_experience");
                 System.out.println(queryList2);
                 break;
             case "3":
-                queryList1 = queryService.callPythonScript(lastUserMessage,"prepare_experience");
-                queryList2 = queryService.callPythonScript(lastUserMessage,"select_experience");
+                queryList1 = queryService.callPythonScript(lastUserMessage.toString(),"prepare_experience");
+                queryList2 = queryService.callPythonScript(lastUserMessage.toString(),"select_experience");
                 System.out.println(queryList1);
                 System.out.println(queryList2);
                 break;
@@ -282,6 +284,9 @@ public class DeepSeekService {
     public String chatAndFinal(List<Map<String, String>> messages) {
         ChatReply chatReply = chatAndQuery(messages);
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String chatReplyJson = objectMapper.writeValueAsString(chatReply);
+
             // 获取最后一条用户消息
             String lastUserMessage = "";
             for (int i = messages.size() - 1; i >= 0; i--) {
@@ -291,23 +296,6 @@ public class DeepSeekService {
                     break;
                 }
             }
-
-            // 将ChatReply对象转为JSON字符串
-            ObjectMapper objectMapper = new ObjectMapper();
-            String chatReplyJson = objectMapper.writeValueAsString(chatReply);
-
-            // 拼接请求数据和返回数据
-            StringBuilder messageContent = new StringBuilder();
-            messageContent.append("请求数据: ").append(lastUserMessage).append("\n");
-            messageContent.append("返回数据: ").append(chatReplyJson).append("\n");
-
-            // 这里需要添加AccountPasswordMapper的注入
-            // 假设mapper和account已在类中定义
-            // AccountPassword accountPassword = mapper.findByAccount(account);
-            // if (accountPassword != null) {
-            //     accountPassword.setMessageContent(messageContent.toString());
-            //     mapper.updateMessageContent(accountPassword);
-            // }
 
             String finalPrompt = "以下是用户的请求和数据库查询结果：\n" + chatReplyJson + "\n请根据以上信息生成专业回复。";
 
@@ -356,7 +344,7 @@ public class DeepSeekService {
 
             return "未获取到AI回复内容";
         } catch (Exception e) {
-            log.error("处理消息内容出错", e);
+            log.error("调用DeepSeek API出错", e);
             return "抱歉，处理您的请求时出现错误：" + e.getMessage();
         }
     }

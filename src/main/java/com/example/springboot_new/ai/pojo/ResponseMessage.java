@@ -1,15 +1,12 @@
 package com.example.springboot_new.ai.pojo;
 
-import lombok.Data;
 import org.springframework.http.HttpStatus;
 
-@Data
 public class ResponseMessage<T> {
-    private Integer code;
+    private int code;
     private String msg;
     private T data;
-
-    public ResponseMessage(Integer code, String msg, T data) {
+    public ResponseMessage(int code, String msg, T data) {
         this.code = code;
         this.msg = msg;
         this.data = data;

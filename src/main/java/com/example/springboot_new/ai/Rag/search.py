@@ -7,12 +7,14 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 class MilvusSearcher:
-    def __init__(self, db_path="./milvus.db", collection_name="prepare_experience"):
+    def __init__(self, db_path="/home/constina/IdeaProject/springboot_new/src/main/java/com/example/springboot_new/ai/Rag/milvus.db", collection_name="prepare_experience"):
         self.client = MilvusClient(db_path)
         self.embedding_fn = model.DefaultEmbeddingFunction()
         self.collection_name = collection_name
 
     def search_text(self, question, limit=1, output_fields=["text"]):
+        if collection_name=="prepare_experience":
+            limit=4
         query_vectors = self.embedding_fn.encode_queries([question])
         res = self.client.search(
             collection_name=self.collection_name,

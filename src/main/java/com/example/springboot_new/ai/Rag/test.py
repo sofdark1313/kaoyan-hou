@@ -1,7 +1,7 @@
 from pymilvus import MilvusClient
 from pymilvus import model
 
-client = MilvusClient("./milvus.db")##包含prepare_experience,select_experience两个表
+client = MilvusClient("/home/constina/IdeaProject/springboot_new/src/main/java/com/example/springboot_new/ai/Rag/milvus.db")##包含prepare_experience,select_experience两个表
 
 embedding_fn = model.DefaultEmbeddingFunction()
 query_vectors = embedding_fn.encode_queries(["考研数学怎么准备?"])

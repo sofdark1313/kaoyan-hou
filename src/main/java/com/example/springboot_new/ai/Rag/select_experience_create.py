@@ -3,7 +3,7 @@ import re
 from pymilvus import MilvusClient, model
 
 # 初始化Milvus客户端和嵌入模型
-client = MilvusClient("./milvus.db")
+client = MilvusClient("/home/constina/IdeaProject/springboot_new/src/main/java/com/example/springboot_new/ai/Rag/milvus.db")
 embedding_fn = model.DefaultEmbeddingFunction()
 
 if client.has_collection(collection_name="select_experience"):
